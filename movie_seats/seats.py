@@ -64,19 +64,20 @@ class SeatManager(SeatManagerInterface):
     def find_best_seats(self, num_seats: int) -> List[Tuple[int, int]]:
         best_score = 0
         best_seats = None
+        
         for i in range(len(self.seats)):
             row = self.seats[i]
             for j in range(len(row)):
+
                 seats_to_try = self.get_possible_seats(i, j, num_seats)
-                # print("trying seats: ", seats_to_try)
                 if not self.can_sit(seats_to_try):
-                    # print("seats not valid")
                     continue
+
                 score = self.score_seats(seats_to_try)
-                # print("score: ", score)
                 if score > best_score or best_seats is None:
                     best_score = score
                     best_seats = seats_to_try
+
         return best_seats
 
     """
