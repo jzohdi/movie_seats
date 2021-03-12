@@ -15,6 +15,9 @@ seats: a 2D array of 0 if open or 1 if taken
 group_map: dict where the keys are the groups id's and the 
            values are a list of tuples where each tuple is (row, col)
            which is a list of the seats assigned to that group
+
+The heavy lifting of this class is done in:
+    - find_best_seats(num_seats: int) -> List[Tuple[int, int]]
   
 """
 class SeatManager(SeatManagerInterface):
@@ -47,8 +50,18 @@ class SeatManager(SeatManagerInterface):
 
         print(f'Seats found for group {id}\n')
         return True
+    """
+    This method iterates over every possible seating assignment for
+    a group of size num_seats. The group will always be considered as
+    sitting together.
 
-    def find_best_seats(self, num_seats):
+    For every possible seats:
+        - check if the new group can sit there
+        - calculate the score
+        - if new highest score, save these seats as the best so far
+    return the seats that were found to have to highest score.
+    """
+    def find_best_seats(self, num_seats: int) -> List[Tuple[int, int]]:
         best_score = 0
         best_seats = None
         for i in range(len(self.seats)):
@@ -66,6 +79,15 @@ class SeatManager(SeatManagerInterface):
                     best_seats = seats_to_try
         return best_seats
 
+    """
+    Check whether a list of seats can be reserved.
+    To do so:
+        - iterate through the seats of all other reservations
+        - check the new seats against each reservation
+        - the new seats are valid if every individual seat in
+          the new seats is at least 3 cols away or 1 row away
+          from every seat in the other groups seats.
+    """
     def can_sit(self, seats: List[Tuple[int, int]]):
         if not seats:
             return False
@@ -78,26 +100,37 @@ class SeatManager(SeatManagerInterface):
 
         return is_available
     
-    def valid_seat(self, seat, list_of_seats):
+    """
+    check the target seat against the list of seats
+    return true if the target is at least 3 cols or 1 row away
+    from each seat in the list checking against.
+    """
+    def valid_seat(self, seat: Tuple[int, int], list_of_seats: List[Tuple[int, int]]):
         row, col = seat
-        # print("comparing seats ", seat, " to groups seats: ", list_of_seats)
+    
         for item in list_of_seats:
             row_dist = abs(row - item[0])
             col_dist = abs(col - item[1]) 
             if row_dist < 2 and col_dist < 4:
-                # print("too close. compared to: ", item, " row:", row_dist, " col: ", col_dist)
                 return False
 
         return True
-
-    def get_possible_seats(self, row, col, num):
+    """
+    Given a start row and col returns a list of 
+    the cols to the right if possible given 
+    the number of seats: num
+    """
+    def get_possible_seats(self, row: int, col: int, num: int):
         if col + num >= SEATS_PER_ROW - 1:
             return []
         seats = []
         for x in range(num):
             seats.append((row, col + x))
         return seats
-
+    
+    """
+    Save the seats in the movie theater assignment
+    """
     def reserve_seats(self, id: str, seats: List[Tuple[int, int]]):
         self.group_map[id] = seats
         for seat in seats:
@@ -156,6 +189,7 @@ class SeatManager(SeatManagerInterface):
                     queue.append((curr_dist+ 1,neighbor))
                     seen.add(key)
         return dist
+
     """
     Manhattan distance
     """
@@ -164,7 +198,13 @@ class SeatManager(SeatManagerInterface):
         dist_to_target = (abs(target[0] - seat[0]), abs(target[1] - seat[1]))
         return 100 - sum(dist_to_target)
 
-    def print_tickets(self):
+    """
+    Returns a string of all the reservations in format:
+    <Reservation ID> <seat>,<seat>,...
+    <Reservation ID> <seat>,<seat>,...
+    ...
+    """
+    def print_tickets(self) -> str:
         def format_seats(seats):
             formatted = ""
             for seat in seats:
